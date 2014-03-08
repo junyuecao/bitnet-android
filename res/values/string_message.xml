@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="login_ok">登录成功</string>
+    <string name="user_tab_error">认证程序未启动</string>
+    <string name="username_error">用户名错误</string>
+    <string name="non_auth_error">您无须认证，可直接上网</string>
+    <string name="password_error">密码错误</string>
+    <string name="status_error">用户已欠费，请尽快充值。</string>
+    <string name="available_error">用户已禁用</string>
+    <string name="ip_exist_error">您的IP尚未下线，请等待2分钟再试。</string>
+    <string name="usernum_error">用户数已达上限</string>
+    <string name="online_num_error">该帐号的登录人数已超过限额,如果怀疑帐号被盗用，请联系管理员。</string>
+    <string name="mode_error">系统已禁止WEB方式登录，请使用客户端</string>
+    <string name="time_policy_error">"当前时段不允许连接</string>
+    <string name="flux_error">"您的流量已超支</string>
+    <string name="minutes_error">"您的时长已超支</string>
+    <string name="ip_error">"您的IP地址不合法</string>
+    <string name="mac_error">"您的MAC地址不合法</string>
+    <string name="sync_error">"您的资料已修改，正在等待同步，请2分钟后再试。</string>
+
+    <string name="logout_ok">注销成功</string>
+    <string name="logout_error">您不在线上"</string>
+    <string name="unknown_error">未知错误"</string>
+    <string name="incomplete">请填写用户名和密码</string>
+    <string name="delete_ok">删除成功</string>
+    <string name="about"><![CDATA[关于&帮助]]></string>
+    <string name="help">使用方法:\n1.与网页版功能相似\n2.强制下线后需要等待1分钟\n3.支持多账户存储,点击\"仅保存\",可以在不需要登录的情况下保存帐号密码.</string>
+</resources>

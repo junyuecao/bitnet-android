@@ -1,0 +1,35 @@
+<resources>
+    
+    <!-- Strings related to login -->
+    <string name="prompt_username">帐号</string>
+    <string name="prompt_password">密码</string>
+
+    <string name="action_sign_in_register"><b>登录</b> or 注册</string>
+    <string name="action_sign_in_short">登录</string>
+
+    <string name="action_forgot_password">找回密码</string>
+
+    <string name="login_progress_signing_in">Signing in&#8230;</string>
+    <string name="login_progress_force_logout">正在强制下线</string>
+    <string name="login_progress_logout">正在登出</string>
+
+
+    <string name="error_invalid_email">This email address is invalid</string>
+    <string name="error_invalid_password">This password is too short</string>
+    <string name="error_incorrect_password">This password is incorrect</string>
+    <string name="error_field_required">This field is required</string>
+    <string name="action_save_password">保存密码</string>
+    <string name="free_mode">国内模式</string>
+    <string name="action_force_logout">强制下线</string>
+
+    <string name="prompt_drawer_title">选择帐号</string>
+    <string name="save_to_db">仅保存</string>
+    <string name="action_delete_account">删除</string>
+    <string name="logout_confirm">确定要强制下线吗?所有在线的设备都将被踢下线!</string>
+    <string name="confirm">确定</string>
+    <string name="cancel">取消</string>
+    <string name="action_about">关于</string>
+    <string name="logout">登出</string>
+    <string name="check_info">查看详情</string>
+    <string name="not_login">当前未登录,请登录后查看</string>
+</resources>

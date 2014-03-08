@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Srun3000</string>
+    <string name="drawer_open">Open navigation drawer</string>
+    <string name="drawer_close">Close navigation drawer</string>
+    <string name="action_add">添加帐号</string>
+    <string name="app_not_available">Sorry, there\'s no web browser available</string>
+    <string name="force_logout_ok">强制登出成功</string>
+    <string name="info_view_title">查看详情</string>
+    <string name="close_wifi">关闭WIFI</string>
+    <string name="open_wifi">打开WIFI</string>
+    <string name="opened_wifi">已打开WIFI</string>
+
+</resources>
