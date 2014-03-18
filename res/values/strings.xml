@@ -9,5 +9,7 @@
     <string name="close_wifi">关闭WIFI</string>
     <string name="open_wifi">打开WIFI</string>
     <string name="opened_wifi">已打开WIFI</string>
+    <string name="auto_finish">登录后自动关闭</string>
+    <string name="app_shortcut_login">立即登录</string>
 
 </resources>

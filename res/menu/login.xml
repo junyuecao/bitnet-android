@@ -6,6 +6,9 @@
         android:title="@string/open_wifi"
         android:checkable="true"
     />
+    <item android:id="@+id/auto_finish"
+        android:title="@string/auto_finish"
+        android:checkable="true" />
     <item android:id="@+id/action_about"
           android:title="@string/action_about"
           android:showAsAction="never" />

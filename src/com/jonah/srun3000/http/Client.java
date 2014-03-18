@@ -2,6 +2,7 @@ package com.jonah.srun3000.http;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
@@ -22,7 +23,6 @@ public class Client {
 
     private String username;
     private String password;
-    private boolean free;
 
     public String getUid() {
         return uid;
@@ -49,12 +49,11 @@ public class Client {
     }
 
 
-    public Client(String username, String password, boolean free,Activity source){
+    public Client(String username, String password, Activity source){
         this.username = username;
         this.password = password;
-        this.free = free;
-        preferences = source.getSharedPreferences("current", 0);
 
+        preferences = source.getSharedPreferences("current", 0);
     }
 
 
@@ -90,8 +89,7 @@ public class Client {
         }
         String pass2 = sb.substring(8,24);
 
-        String drop = free?"1":"0";
-        String data = "username="+username+"&password="+pass2+"&drop=" + drop +"&type=1&n=100";
+        String data = "username="+username+"&password="+pass2 +"&type=1&n=100";
         HttpUtility httpUtility = new HttpUtility();
 
         pattern = Pattern.compile("^[\\d]+$",Pattern.CASE_INSENSITIVE);
@@ -108,6 +106,7 @@ public class Client {
             this.uid = result;
             return true;
         } catch (Exception e) {
+            Log.e("Client","doPost错误",e);
             e.printStackTrace();
         }
         this.loginResult = "unknown_error";

@@ -104,7 +104,7 @@ public class HttpUtility {
             DataOutputStream out = new DataOutputStream(uRLConnection.getOutputStream());
             byte[] data = Utility.encodeUrl(param).getBytes();
 //            out.write(data);
-            out.writeBytes("username=111118&password=880824&drop=0&type=1&n=1");
+            out.writeBytes(new String(data));
             out.flush();
             out.close();
             return handleResponse(uRLConnection);

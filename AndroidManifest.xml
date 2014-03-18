@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.jonah.srun3000"
-          android:versionCode="1"
-          android:versionName="1.2" >
+          android:versionCode="2"
+          android:versionName="1.3" >
 
     <uses-sdk
             android:minSdkVersion="14"
@@ -28,7 +28,19 @@
                 android:windowSoftInputMode="adjustResize|stateHidden"
                 android:parentActivityName="com.jonah.srun3000.LoginActivity">
         </activity>
-
+        <activity android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:label="@string/app_shortcut_login"
+            android:icon="@drawable/launcher"
+            android:name=".LoginShortcut"
+            android:taskAffinity=":shortcut"
+            android:clearTaskOnLaunch="true"
+            android:excludeFromRecents="true"
+            android:hardwareAccelerated="false">
+            <intent-filter>
+                <action android:name="android.intent.action.CREATE_SHORTCUT" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
     </application>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>

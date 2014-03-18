@@ -3,9 +3,10 @@ package com.jonah.srun3000;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.*;
 import android.content.res.Configuration;
 import android.database.Cursor;
@@ -16,13 +17,19 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 import android.support.v4.widget.DrawerLayout;
 import android.text.TextUtils;
 import android.view.*;
 import android.view.inputmethod.EditorInfo;
 import android.widget.*;
+import com.j256.ormlite.android.apptools.OpenHelperManager;
+import com.j256.ormlite.android.apptools.OrmLiteBaseActivity;
+import com.j256.ormlite.dao.Dao;
 import com.jonah.srun3000.http.Client;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,7 +37,7 @@ import java.util.List;
  * Activity which displays a login screen to the user, offering registration as
  * well.
  */
-public class LoginActivity extends Activity {
+public class LoginActivity extends OrmLiteBaseActivity<AccountDatabaseHelper> {
 
     /**
      * Keep track of the login task to ensure we can cancel it if requested.
@@ -60,9 +67,8 @@ public class LoginActivity extends Activity {
     private CharSequence mDrawerTitle;
     private CharSequence mTitle;
 
-    //DatabaseHelper
-    private DatabaseHelper dbHelper;
-    private SharedPreferences preferences;
+    private Dao<Account, String> mAccountDao;
+    private SharedPreferences current;
 
     //WifiManager
     private WifiManager wifiManager;
@@ -74,8 +80,8 @@ public class LoginActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_login);
-        dbHelper = new DatabaseHelper(this);
-        preferences = getSharedPreferences("current",0);
+        mAccountDao = getHelper().getDao();
+        current = getSharedPreferences("current",0);
         // Set up the login form.
         mUsernameView = (EditText) findViewById(R.id.username);
         mPasswordView = (EditText) findViewById(R.id.password);
@@ -92,9 +98,8 @@ public class LoginActivity extends Activity {
                 return false;
             }
         });
-        mUsernameView.setText(preferences.getString("current_username",""));
-        mPasswordView.setText(preferences.getString("current_password",""));
-//        mFreeModeView.setChecked(preferences.getBoolean("current_free",true));
+        mUsernameView.setText(current.getString("username",""));
+        mPasswordView.setText(current.getString("password",""));
         mSavePassView.setChecked(true);
 
         mLoginFormView = findViewById(R.id.login_form);
@@ -164,6 +169,7 @@ public class LoginActivity extends Activity {
             /** Called when a drawer has settled in a completely open state. */
             public void onDrawerOpened(View drawerView) {
                 getActionBar().setTitle(mDrawerTitle);
+                setUpDrawerList();
                 invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
             }
         };
@@ -177,11 +183,14 @@ public class LoginActivity extends Activity {
             public void onClick(View v) {
                 String username = mUsernameView.getText().toString();
                 String password = mPasswordView.getText().toString();
-                if(!username.equals("")&&!password.equals("")){
-                    saveOrUpdateAccount(username,password);
+
+                Account account = new Account(username,password);
+                try {
+                    mAccountDao.createOrUpdate(account);
                     mDrawerLayout.openDrawer(mDrawerList);
-                }else{
+                } catch (SQLException e) {
                     Toast.makeText(LoginActivity.this,R.string.incomplete,1000).show();
+                    e.printStackTrace();
                 }
 
             }
@@ -194,7 +203,7 @@ public class LoginActivity extends Activity {
     }
 
     private void openInfoActivity() {
-        String uid = preferences.getString("current_uid","null");
+        String uid = current.getString("uid","null");
         String infoURL ="http://10.0.0.55/user_info.php?uid=";
         if(uid == null){
             Toast.makeText(this,R.string.not_login,500).show();
@@ -229,25 +238,22 @@ public class LoginActivity extends Activity {
         String username = ((TextView)view).getText().toString();
 
         if(mDrawerTitles.remove(username)){
-            SQLiteDatabase db = dbHelper.getWritableDatabase();
-            String[] params = {username};
-            int count = db.delete(DatabaseHelper.ACCOUNT_TABLE_NAME,"username = ?",params);
-            if(count > 0){
+            try {
+                mAccountDao.delete(mAccountDao.queryForId(username));
                 Toast.makeText(this,getString(R.string.delete_ok),1000).show();
                 adapter.notifyDataSetChanged();
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
         }
     }
 
     private void setUpDrawerList(){
         mDrawerTitles = new ArrayList<String>();
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor cursor = db.rawQuery("select username from "+DatabaseHelper.ACCOUNT_TABLE_NAME,null);
-        cursor.moveToFirst();
-        while (!cursor.isAfterLast()){
-            mDrawerTitles.add(cursor.getString(cursor.getColumnIndex("username")));
-            cursor.moveToNext();
+        for (Account account : mAccountDao) {
+            mDrawerTitles.add(account.getUsername());
         }
+
         mDrawerList = (ListView) findViewById(R.id.left_drawer);
         mDrawerList.setItemChecked(0,true);
         adapter = new ArrayAdapter<String>(this, R.layout.drawer_list_item, mDrawerTitles);
@@ -263,12 +269,19 @@ public class LoginActivity extends Activity {
         boolean drawerOpen = mDrawerLayout.isDrawerOpen(mDrawerList);
 //        menu.findItem(R.id.action_add).setVisible(!drawerOpen);
         MenuItem item= menu.findItem(R.id.action_wifi);
+        MenuItem autoFinishMenuItem = menu.findItem(R.id.auto_finish);
+
         wifiManager = (WifiManager)getSystemService(Context.WIFI_SERVICE);
         boolean isWifiEnabled = !(wifiManager.getWifiState() == WifiManager.WIFI_STATE_DISABLED);
 
         item.setChecked(isWifiEnabled);
         item.setTitle(isWifiEnabled?R.string.opened_wifi:R.string.open_wifi);
         item.setEnabled(!isWifiEnabled);
+
+        SharedPreferences settings = getSharedPreferences("settings", 0);
+        boolean isAutoFinish = settings.getBoolean("autoFinish", false);
+
+        autoFinishMenuItem.setChecked(isAutoFinish);
 
         return super.onPrepareOptionsMenu(menu);
     }
@@ -297,6 +310,10 @@ public class LoginActivity extends Activity {
                 return true;
             case R.id.action_wifi:
                 openWifi(item);
+                return true;
+            case R.id.auto_finish:
+                saveAutoFinishPref(item.isChecked());
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -310,6 +327,14 @@ public class LoginActivity extends Activity {
             item.setTitle(R.string.opened_wifi);
             item.setEnabled(false);
         }
+    }
+
+    private void saveAutoFinishPref(Boolean isChecked){
+        // set preference
+        SharedPreferences settings = getSharedPreferences("settings", 0);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putBoolean("autoFinish", !isChecked);
+        editor.commit();
     }
 
     private void showAboutDialog() {
@@ -430,7 +455,7 @@ public class LoginActivity extends Activity {
             focusView.requestFocus();
         } else {
             mAuthTask = new LoginLogoutTask();
-            mAuthTask.execute("forcelogout");// Show a progress spinner, and kick off a background task to
+            mAuthTask.execute("force_logout");// Show a progress spinner, and kick off a background task to
 //            mAuthTask.execute((Void) null);// Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
             mLoginStatusMessageView.setText(R.string.login_progress_force_logout);
@@ -461,6 +486,7 @@ public class LoginActivity extends Activity {
         // for very easy animations. If available, use these APIs to fade-in
         // the progress spinner.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
+
             int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
 
             mLoginStatusView.setVisibility(View.VISIBLE);
@@ -506,18 +532,17 @@ public class LoginActivity extends Activity {
             action = params[0];
 
             // TODO: attempt authentication against a network service.
-            client = new Client(mUsername, mPassword ,mFreeMode, LoginActivity.this);
+            client = new Client(mUsername, mPassword , LoginActivity.this);
             if(action.equals("login")){
                 try {
                     if(client.login()){
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putString("current_username", String.valueOf(mUsernameView.getText()));
-                        editor.putString("current_password", String.valueOf(mPasswordView.getText()));
-//                        editor.putBoolean("current_free",mFreeModeView.isChecked());
-                        editor.putString("current_uid",client.getUid());
+                        SharedPreferences.Editor editor = current.edit();
+                        editor.putString("username", String.valueOf(mUsernameView.getText()));
+                        editor.putString("password", String.valueOf(mPasswordView.getText()));
+                        editor.putString("uid",client.getUid());
                         editor.commit();
                         if(mSavePassView.isChecked()){
-                            saveOrUpdateAccount(mUsername,mPassword);
+                            mAccountDao.createOrUpdate(new Account(mUsername,mPassword));
                         }
                         return true;
                     }else{
@@ -527,7 +552,7 @@ public class LoginActivity extends Activity {
                     e.printStackTrace();
                     return false;
                 }
-            }else if(action.equals("forcelogout")){
+            }else if(action.equals("force_logout")){
                 try {
 
                     if(client.forceLogout()){
@@ -562,8 +587,9 @@ public class LoginActivity extends Activity {
             showProgress(false);
             if(action.equals("login")){
                 if (success) {
-                    Toast.makeText(LoginActivity.this,getString(R.string.login_ok),1500).show();
-//                finish();
+                    showNotification();
+                    saveCurrent(client.getUid());
+                    finishAsSettings();
                 } else {
                     loginMessage = new LoginMessage(LoginActivity.this);
                     String message = loginMessage.getMessage(client.getLoginResult());
@@ -616,51 +642,62 @@ public class LoginActivity extends Activity {
         }
     }
 
-    private void saveOrUpdateAccount(String username,String password) {
-
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put("username",username);
-        values.put("password", password);
-//        int free = mFreeModeView.isChecked()?1:0;
-//        values.put("free",free);
-        String[] params = {username};
-        int count = db.update(DatabaseHelper.ACCOUNT_TABLE_NAME,values,"username = ?",params);
-        if(count==0){
-            db.insertWithOnConflict(DatabaseHelper.ACCOUNT_TABLE_NAME,null,values,SQLiteDatabase.CONFLICT_ABORT);
-        }
-        if(!mDrawerTitles.contains(username)){
-            mDrawerTitles.add(username);
-            adapter.notifyDataSetChanged();
-        }
-
+    private void saveCurrent(String uid) {
+        SharedPreferences.Editor editor = current.edit();
+        editor.putString("username",mUsername);
+        editor.putString("password",mPassword);
+        editor.putString("uid",uid);
 
     }
+
+    private void finishAsSettings() {
+
+        SharedPreferences settings = getSharedPreferences("settings",0);
+        Boolean isAutoFinish = settings.getBoolean("autoFinish",false);
+        if(isAutoFinish){
+            finish();
+        }
+    }
+
+    private void showNotification() {
+        NotificationCompat.Builder mBuilder =
+                new NotificationCompat.Builder(LoginActivity.this)
+                        .setSmallIcon(R.drawable.launcher)
+                        .setContentTitle("")
+                        .setContentText("")
+                        .setTicker("登录成功")
+                        .setAutoCancel(true);
+
+        NotificationManager mNotificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager.notify(1, mBuilder.build());
+        mNotificationManager.cancel(1);
+    }
+
 
     private class DrawerItemClickListener implements ListView.OnItemClickListener {
         @Override
         public void onItemClick(AdapterView parent, View view, int position, long id) {
+            Account account = null;
             TextView textView = (TextView)view;
             String username = textView.getText().toString();
+            try {
+                account = mAccountDao.queryForId(username);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            if(account != null){
 
-            SQLiteDatabase db = dbHelper.getReadableDatabase();
-            String [] params = {username};
-            Cursor cursor = db.rawQuery("select * from " + DatabaseHelper.ACCOUNT_TABLE_NAME + " where username = ?", params);
-            cursor.moveToFirst();
-            while (!cursor.isAfterLast()){
-                mUsernameView.setText(cursor.getString(cursor.getColumnIndex("username")));
-                String password = cursor.getString(cursor.getColumnIndex("password"));
-                mPasswordView.setText(password);
+                mUsernameView.setText(account.getUsername());
+                mPasswordView.setText(account.getPassword());
                 mDrawerList.setItemChecked(position, true);
-                boolean free = cursor.getInt(cursor.getColumnIndex("free"))==1?true:false;
-//                mFreeModeView.setChecked(free);
+
                 mSavePassView.setChecked(true);
-                SharedPreferences.Editor editor = preferences.edit();
-                editor.putString("current_username",username);
-                editor.putString("current_password",password);
-                editor.putBoolean("current_free",free);
+
+                SharedPreferences.Editor editor = current.edit();
+                editor.putString("username",account.getUsername());
+                editor.putString("password",account.getPassword());
                 editor.commit();
-                cursor.moveToNext();
             }
 
             mDrawerLayout.closeDrawer(mDrawerList);
@@ -689,5 +726,6 @@ public class LoginActivity extends Activity {
             return builder.create();
         }
     }
+
 
 }
